@@ -39,8 +39,8 @@ class tiler(object):
         
         for seq in data:
             hd = "rip"
-            sense = "ripper"
-            antisense = "ripperino"
+            sense = "rip"
+            antisense = "rip"
             try:
                 hd, Tm = self.heterodimer(seq[1],151)
                 self.heterodimers.append(hd)
@@ -65,7 +65,8 @@ class tiler(object):
                 pass
             try:    
                 antisense, Tm = self.extend_antisense(hd, seq[1])
-                self.antisenses.append(antisense)
+                antisense.reverse()
+                self.antisenses.append(self.convert(antisense))
                 self.antiTM.append(Tm)
             except IndexError:
                 self.antisenses.append(["fail"])
