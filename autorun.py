@@ -22,7 +22,6 @@ class tiler(object):
         with open(arg1, 'rb') as f:
             reader = csv.reader(f)
             data = list(reader)
-        ## str contains a list of ALL bases irrespective of start/stop entries
         
         ## open site, make settings for TM calculation 
         self.driver = webdriver.Firefox()
@@ -30,48 +29,38 @@ class tiler(object):
         Mg_conc = self.driver.find_element_by_xpath("//div[@id='OligoAnalyzer']/div[2]/div[1]/div/div[2]/table/tbody/tr[4]/td[2]/input")
         Mg_conc.send_keys("5")
         
-        self.heterodimers = []
-        self.heteroTM = []
-        self.senses = []
-        self.senseTM = []
-        self.antisenses = []
-        self.antiTM = []
+        self.heterodimers = [0]*len(data)
+        self.heteroTM = [0]*len(data)
+        self.senses = [0]*len(data)
+        self.senseTM = [0]*len(data)
+        self.antisenses = [0]*len(data)
+        self.antiTM = [0]*len(data)
         
-        for seq in data:
+        warning = 0
+        
+        for i in range(len(data)):
             hd = "rip"
             sense = "rip"
             antisense = "rip"
             try:
-                hd, Tm = self.heterodimer(seq[1],151)
-                self.heterodimers.append(hd)
-                self.heteroTM.append(Tm)
-            except IndexError:
-                self.heterodimers.append(["fail"])
-                self.heteroTM.append(["fail"])
-                self.senses.append(["fail"])
-                self.senseTM.append(["fail"])
-                self.antisenses.append(["fail"])
-                self.antiTM.append(["fail"])
-                pass
-            try:
-                sense, Tm = self.extend_sense(hd, seq[1])
-                self.senses.append(sense)
-                self.senseTM.append(Tm)
-            except IndexError:
-                self.senses.append(["fail"])
-                self.antisenses.append(["fail"])
-                self.senseTM.append(["fail"])
-                self.antiTM.append(["fail"])
-                pass
-            try:    
-                antisense, Tm = self.extend_antisense(hd, seq[1])
+                hd, Tm = self.heterodimer(data[i][1],151)
+                self.heterodimers[i] = hd
+                self.heteroTM[i] = Tm
+                
+                sense, Tm = self.extend_sense(hd, data[i][1])
+                self.senses[i] = sense
+                self.senseTM[i] = Tm   
+                
+                antisense, Tm = self.extend_antisense(hd, data[i][1])
                 antisense.reverse()
-                self.antisenses.append(self.convert(antisense))
-                self.antiTM.append(Tm)
+                self.antisenses[i] = self.convert(antisense)
+                self.antiTM[i] = Tm
+                
             except IndexError:
-                self.antisenses.append(["fail"])
-                self.antiTM.append(["fail"])
-                pass    
+                i = i-1
+                continue
+                
+                   
             print ("Heterodimer: %s " % hd)
             print ("Sense: %s " % sense)
             print ("Antisense: %s " % antisense)

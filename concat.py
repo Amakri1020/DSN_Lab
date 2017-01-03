@@ -1,9 +1,10 @@
 import sys
 import csv
 
+out_name = sys.argv[1]
 f = open("results.csv")
 csv_f = csv.reader(f)
-output = open("results_c.csv", 'wb')
+output = open("%s.csv"%out_name, 'wb')
 writer = csv.writer(output)
 writer.writerow(["Heterodimer", "Tm", "Sense", "Tm", "Antisense", "Tm"])
 flag = 0
