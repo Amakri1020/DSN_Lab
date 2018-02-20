@@ -24,38 +24,25 @@ class tiler(object):
             reader = csv.reader(f)
             data = list(reader)
         
-        #Mg_conc.send_keys("5")
+        self.results = [[0]*6 for x in range(len(data))]
+        self.results[0] = ['Heterodimer','Tm', 'Sense', 'Tm', 'Antisense', 'Tm']
         
-        self.heterodimers = [0]*len(data)
-        self.heteroTM = [0]*len(data)
-        self.senses = [0]*len(data)
-        self.senseTM = [0]*len(data)
-        self.antisenses = [0]*len(data)
-        self.antiTM = [0]*len(data)
-        
-        warning = 0
-        
-        for i in range(len(data)):
-            hd = "rip"
-            sense = "rip"
-            antisense = "rip"
+        for i in range(1, len(data)):
             try:
-                print(data[i][0],data[i][1],data[i][2])
                 hd, Tm = self.heterodimer(data[i][2],data[i][1])
-                print(hd)
-                self.heterodimers[i] = hd
-                self.heteroTM[i] = Tm
+                self.results[i][0] = hd
+                self.results[i][1] = int(Tm)
                 
                 sense, Tm = self.extend_sense(hd, data[i][2])
-                self.senses[i] = sense
-                self.senseTM[i] = Tm   
+                self.results[i][2] = sense
+                self.results[i][3] = int(Tm)   
                 
                 antisense, Tm = self.extend_antisense(hd, data[i][2])
                 antisense = list(antisense)
                 antisense.reverse()
                 antisense = ''.join(antisense)
-                self.antisenses[i] = self.convert(antisense)
-                self.antiTM[i] = Tm
+                self.results[i][4] = self.convert(antisense)
+                self.results[i][5] = int(Tm)
                 
             except IndexError:
                 i = i-1
@@ -70,15 +57,9 @@ class tiler(object):
                 
         f = open("results.csv", "w")
         writer = csv.writer(f)
-        for i in range(len(self.heterodimers)):
-            writer.writerow([self.heterodimers[i],self.heteroTM[i]])
-        writer.writerow("skip")
-        for i in range(len(self.senses)):
-            writer.writerow([self.senses[i], self.senseTM[i]])
-        writer.writerow("skip")
-        for i in range(len(self.antisenses)):
-            writer.writerow([self.antisenses[i], self.antiTM[i]])
-        
+
+        for i in range(len(self.results)):
+            writer.writerow(self.results[i])
         
     ##Attaches bases to antisense probe until TM is satisfactory
     def extend_antisense(self, hd, seq):
@@ -131,7 +112,7 @@ class tiler(object):
         ## Use probe_lengthener to update index when extending/shortening probes
         ## Extend to the left until Tm is sufficiently high
         while (Tm < MIN_OVERLAP_TM):
-            probe_lengthener = probe_lengthener + 2
+            probe_lengthener = probe_lengthener + 1
             hd = seq[144:(152+probe_lengthener)]
             
             Tm = self.analyze(hd)
