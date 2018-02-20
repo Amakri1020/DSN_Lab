@@ -24,11 +24,7 @@ class tiler(object):
             reader = csv.reader(f)
             data = list(reader)
         
-        ## open site, make settings for TM calculation 
-        self.driver = webdriver.Chrome()
-        self.driver.get("http://www.idtdna.com/calc/analyzer")
-        Mg_conc = self.driver.find_element_by_xpath("//div[@id='OligoAnalyzer']/div[2]/div[1]/div/div[2]/table/tbody/tr[4]/td[2]/input")
-        Mg_conc.send_keys("5")
+        #Mg_conc.send_keys("5")
         
         self.heterodimers = [0]*len(data)
         self.heteroTM = [0]*len(data)
@@ -44,16 +40,20 @@ class tiler(object):
             sense = "rip"
             antisense = "rip"
             try:
-                hd, Tm = self.heterodimer(data[i][1],151)
+                print(data[i][0],data[i][1],data[i][2])
+                hd, Tm = self.heterodimer(data[i][2],data[i][1])
+                print(hd)
                 self.heterodimers[i] = hd
                 self.heteroTM[i] = Tm
                 
-                sense, Tm = self.extend_sense(hd, data[i][1])
+                sense, Tm = self.extend_sense(hd, data[i][2])
                 self.senses[i] = sense
                 self.senseTM[i] = Tm   
                 
-                antisense, Tm = self.extend_antisense(hd, data[i][1])
+                antisense, Tm = self.extend_antisense(hd, data[i][2])
+                antisense = list(antisense)
                 antisense.reverse()
+                antisense = ''.join(antisense)
                 self.antisenses[i] = self.convert(antisense)
                 self.antiTM[i] = Tm
                 
@@ -67,9 +67,7 @@ class tiler(object):
             print ("Antisense: %s " % antisense)
 
         
-        
-        self.driver.close()
-        
+                
         f = open("results.csv", "w")
         writer = csv.writer(f)
         for i in range(len(self.heterodimers)):
@@ -88,23 +86,17 @@ class tiler(object):
         for element in hd:
             antisense.append(element)
         probe_lengthener = 144 + len(hd)
-        
+        antisense = ''.join(antisense)
         Tm = self.analyze(antisense)
-        if (Tm[2] == " "):
-            Tm = float(Tm[0] + Tm[1])
-        else:
-            Tm = float(Tm[0] + Tm[1])  
             
         while (Tm < MIN_PROBE_TM):
+            antisense = list(antisense)
             antisense.append(seq[probe_lengthener])
+            antisense = ''.join(antisense)
             probe_lengthener = probe_lengthener + 1
             
             Tm = self.analyze(antisense)
             #print Tm
-            if (Tm[2] == " "):
-                Tm = float(Tm[0] + Tm[1])
-            else:
-                Tm = float(Tm[0] + Tm[1])
                 
         return (antisense, Tm)
     
@@ -114,23 +106,16 @@ class tiler(object):
         for element in hd:
             sense.append(element)
         probe_lengthener = 143
-        
+        sense = ''.join(sense)
         Tm = self.analyze(sense)
-        if (Tm[2] == " "):
-            Tm = float(Tm[0] + Tm[1])
-        else:
-            Tm = float(Tm[0] + Tm[1])
             
         while (Tm < MIN_PROBE_TM):
+            sense = list(sense)
             sense.insert(0, seq[probe_lengthener])
+            sense = ''.join(sense)
             probe_lengthener = probe_lengthener - 1
             
             Tm = self.analyze(sense)
-            #print Tm
-            if (Tm[2] == " "):
-                Tm = float(Tm[0] + Tm[1])
-            else:
-                Tm = float(Tm[0] + Tm[1])
             
         ## Tm should never be > MAX_PROBE_TM because it starts with hd's tm, which is significantly lower, no second while required
         return (sense, Tm)
@@ -142,13 +127,6 @@ class tiler(object):
         print (seq)
             
         Tm = self.analyze(hd)
-        print(Tm)
-        if (Tm[2] == " "):
-            Tm = float(Tm[0] + Tm[1])
-        elif (Tm[0] == "0"): 
-                Tm = 0
-        else:
-            Tm = float(Tm[0] + Tm[1])
         
         ## Use probe_lengthener to update index when extending/shortening probes
         ## Extend to the left until Tm is sufficiently high
@@ -157,14 +135,6 @@ class tiler(object):
             hd = seq[144:(152+probe_lengthener)]
             
             Tm = self.analyze(hd)
-            print(Tm)
-            if (Tm[2] == " "):
-                Tm = float(Tm[0] + Tm[1])
-            elif (Tm[0] == "0"): 
-                Tm = 0
-            else:
-                print(Tm)
-                Tm = float(Tm[0] + Tm[1])
             
                 
         while (Tm > MAX_OVERLAP_TM):
@@ -173,18 +143,13 @@ class tiler(object):
             
             
             Tm = self.analyze(hd)
-            #In case analysis returns int vs float
-            if (Tm[2] == " "):
-                Tm = float(Tm[0] + Tm[1])
-            else:
-                Tm = float(Tm[0] + Tm[1])
             
-        
-        self.start = start + DEFAULT_OVERLAP_LENGTH + probe_lengthener + 1
+        print("Hetero Done")
         return (hd, Tm)
     
     ##Simple method for rewriting sense probes into antisense
     def convert(self, probe):
+        probe = list(probe)
         for i in range(len(probe)):
             if (probe[i] == 'A' or probe[i] == 'a'):
                 probe[i] = 'T'
@@ -194,35 +159,16 @@ class tiler(object):
                 probe[i] = 'C'
             elif (probe[i] == 'C' or probe[i] == 'c'):
                 probe[i] = 'G'
+        probe = ''.join(probe)
         return probe
         
     ##Returns TM of probe by using analyzer in IDTDNA.com
     def analyze(self, probe):
-        
-        self.driver.implicitly_wait(5)
-        time.sleep(5)
-        probe_string = ''.join(probe)
-        self.driver.find_element_by_css_selector('textarea.form-control').clear()
-        elem = self.driver.find_element_by_css_selector('#OligoAnalyzer > div.panel.panel-default > div.panel-body > div > div.col-md-7 > div:nth-child(4) > div > div > textarea')
-        print(probe_string)
-        elem.send_keys(probe_string)
-        
-        #time.sleep(3)
-        self.driver.implicitly_wait(5)
-        
-        self.driver.find_element_by_css_selector("button.btn.btn-primary.btn-md.btn-block").click()
-        
-        time.sleep(5)
-        self.driver.implicitly_wait(5)
-
-
-        
-        result = self.driver.find_element_by_xpath("//*[@id='OAResults']/div/div[1]/div[3]/div/div/table/tbody/tr[5]/td[2]/span")
-        result = result.text
-        while result == None:
-            result = self.driver.find_element_by_xpath("//div[@id='OAResults']/div/div[1]/div[3]/div/div/table/tbody/tr[5]/td[2]/span")
-            result = result.text
-        return result
+        print(probe)
+        print(str(probe))
+        tm = melting.temp(str(probe), DNA_c=250,Na_c=50, Mg_c=5, dNTPs_c=0)
+        print(tm)
+        return tm
         
         
 ## Initializer with "python tiler.py [filename]"
