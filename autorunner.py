@@ -33,11 +33,11 @@ class tiler(object):
                 self.results[i][0] = hd
                 self.results[i][1] = int(Tm)
                 
-                sense, Tm = self.extend_sense(hd, data[i][2])
+                sense, Tm = self.extend_sense(hd, data[i][2],data[i][1])
                 self.results[i][2] = sense
                 self.results[i][3] = int(Tm)   
                 
-                antisense, Tm = self.extend_antisense(hd, data[i][2])
+                antisense, Tm = self.extend_antisense(hd, data[i][2],data[i][1])
                 antisense = list(antisense)
                 antisense.reverse()
                 antisense = ''.join(antisense)
@@ -62,11 +62,12 @@ class tiler(object):
             writer.writerow(self.results[i])
         
     ##Attaches bases to antisense probe until TM is satisfactory
-    def extend_antisense(self, hd, seq):
+    def extend_antisense(self, hd, seq, start):
         antisense = []
+        start = int(start)
         for element in hd:
             antisense.append(element)
-        probe_lengthener = 144 + len(hd)
+        probe_lengthener = start-3 + len(hd)
         antisense = ''.join(antisense)
         Tm = self.analyze(antisense)
             
@@ -82,11 +83,12 @@ class tiler(object):
         return (antisense, Tm)
     
     #Attaches bases to sense probe until TM is satisfactory
-    def extend_sense(self, hd, seq):
+    def extend_sense(self, hd, seq, start):
         sense = []
+        start = int(start)
         for element in hd:
             sense.append(element)
-        probe_lengthener = 143
+        probe_lengthener = start-4
         sense = ''.join(sense)
         Tm = self.analyze(sense)
             
@@ -104,8 +106,8 @@ class tiler(object):
     
     def heterodimer(self, seq, start):
         probe_lengthener = 0
-        hd = seq[146:152]
-        print (seq)
+        start = int(start)
+        hd = seq[start-3:start+3]
             
         Tm = self.analyze(hd)
         
@@ -113,7 +115,7 @@ class tiler(object):
         ## Extend to the left until Tm is sufficiently high
         while (Tm < MIN_OVERLAP_TM):
             probe_lengthener = probe_lengthener + 1
-            hd = seq[144:(152+probe_lengthener)]
+            hd = seq[start-3:(start+3+probe_lengthener)]
             
             Tm = self.analyze(hd)
             
