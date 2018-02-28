@@ -1,14 +1,11 @@
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.keys import Keys
 import sys
 import os.path
 import os
 import time
 import csv
 import melting
+from tkinter import filedialog
+from tkinter import *
 MIN_PROBE_TM = 64
 MAX_PROBE_TM = 66
 MIN_OVERLAP_TM = 44
@@ -19,8 +16,10 @@ FIRST_OFFSET = 10
 
 class tiler(object):
     
-    def __init__(self, arg1):
-        with open(arg1, 'r') as f:
+    def __init__(self):
+        root = Tk()
+        root.filename =  filedialog.askopenfilename(initialdir = "/",title = "Select file",filetypes = (("csv files","*.csv"),("all files","*.*")))
+        with open(root.filename, 'r') as f:
             reader = csv.reader(f)
             data = list(reader)
         
@@ -156,4 +155,4 @@ class tiler(object):
         
 ## Initializer with "python tiler.py [filename]"
 if __name__=='__main__':
-    my_tiler = tiler(sys.argv[1])
+    my_tiler = tiler()
