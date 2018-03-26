@@ -23,25 +23,38 @@ class tiler(object):
             reader = csv.reader(f)
             data = list(reader)
         
-        self.results = [[0]*6 for x in range(len(data))]
-        self.results[0] = ['Heterodimer','Tm', 'Sense', 'Tm', 'Antisense', 'Tm']
+        self.results = [[0]*16 for x in range(len(data))]
+        self.results[0] = ['Target Name', 'Probe Overlap Dimer','Tm', 'Sense_name', 'Sense_tail', 'Tm', 
+        'Length','Mutation Position', 'Antisense_name', 'Antisense_tail', 'Tm', 'Length', 
+        'Mutation Position', 'Reverse Complement', 'Sense_no_tail', 'Antisense_no_tail']
         
         for i in range(1, len(data)):
             try:
+                self.results[i][0] = data[i][0]
+                self.results[i][3] = data[i][0] + "_sense"
+                self.results[i][8] = data[i][0] + "_antisense"
                 hd, Tm = self.heterodimer(data[i][2],data[i][1])
-                self.results[i][0] = hd
-                self.results[i][1] = int(Tm)
+                self.results[i][1] = hd
+                self.results[i][2] = int(Tm)
                 
-                sense, Tm = self.extend_sense(hd, data[i][2],data[i][1])
-                self.results[i][2] = sense
-                self.results[i][3] = int(Tm)   
+                sense, Tm, pos = self.extend_sense(hd, data[i][2],data[i][1])
+                self.results[i][4] = sense
+                self.results[i][5] = int(Tm)
+                self.results[i][6] = len(sense)
+                self.results[i][7] = pos  
+                self.results[i][14] = sense[:-3]
                 
                 antisense, Tm = self.extend_antisense(hd, data[i][2],data[i][1])
+                copy = antisense
+                self.results[i][13] = copy
                 antisense = list(antisense)
                 antisense.reverse()
                 antisense = ''.join(antisense)
-                self.results[i][4] = self.convert(antisense)
-                self.results[i][5] = int(Tm)
+                self.results[i][9] = self.convert(antisense)
+                self.results[i][10] = int(Tm)
+                self.results[i][11] = len(antisense)
+                self.results[i][12] = len(antisense) - 5 
+                self.results[i][15] = self.convert(antisense[:-3])
                 
             except IndexError:
                 i = i-1
@@ -53,8 +66,11 @@ class tiler(object):
             print ("Antisense: %s " % antisense)
 
         
-                
-        f = open("results.csv", "w")
+        #Results: [0 Target_name, 1 Probe Overlap Dimer, 2 Tm, 3 Target_name_sense, 4 Sense_tail, 5 Tm, 6 Length, 
+        #			7 Mut_position, 8 Target_name_antisense, 9 Antisense_tail, 10 Tm, 11 Length, 12 Mutation Position
+        #           13 Reverse Complement, 14 Sense_no_tail, 15 Antisense_no_tail]
+        name = root.filename[:-4] + "_results.csv"
+        f = open(name, "w")
         writer = csv.writer(f)
 
         for i in range(len(self.results)):
@@ -94,6 +110,7 @@ class tiler(object):
     
     #Attaches bases to sense probe until TM is satisfactory
     def extend_sense(self, hd, seq, start):
+        count = 3
         sense = []
         start = int(start)
         for element in hd:
@@ -108,6 +125,7 @@ class tiler(object):
             sense.insert(0, seq[probe_lengthener])
             sense = ''.join(sense)
             probe_lengthener = probe_lengthener - 1
+            count = count + 1
             
             Tm = self.analyze(sense)
             
@@ -121,7 +139,7 @@ class tiler(object):
         	end = end + 1
         	sense = ''.join(sense)
         ## Tm should never be > MAX_PROBE_TM because it starts with hd's tm, which is significantly lower, no second while required
-        return (sense, Tm)
+        return (sense, Tm, count)
     
     
     def heterodimer(self, seq, start):
