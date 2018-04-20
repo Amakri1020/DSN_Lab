@@ -44,13 +44,27 @@ class tiler(object):
                 	print(hd, sense, antisense)
                 	hd, sense, antisense, pos, as_pos = self.fixer(hd, sense, antisense, pos, as_pos)
                 	print(hd, sense, antisense)
-                	Tm_hd = self.analyze(hd)
                 	Tm_s = self.analyze(sense)
                 	Tm_as = self.analyze(antisense)
                 	print("Fixing " + str(i) + "'th entry...")
 
+                	if Tm_s < MIN_PROBE_TM:
+                		#print("Fixing " + str(i) "'th sense entry again...")
+                		print(sense, Tm_s)
+                		hd, sense, Tm_s = self.fix_tm(hd, data[i][2], sense, Tm_s, 1)
+                		print(sense, Tm_s)
+                	if Tm_as < MIN_PROBE_TM:
+                		#print("Fixing " + str(i) "'th antisense entry again...")
+                		print(antisense, Tm_as)
+                		hd, antisense, Tm_as = self.fix_tm(hd, data[i][2], antisense, Tm_as, 0)
+                		print(antisense, Tm_as)
+                	Tm_hd = self.analyze(hd)
+
+
+
                 sense = self.add_tail(data[i][2], sense, 1)
                 antisense = self.add_tail(data[i][2], antisense, 0)
+
 
 
                 self.results[i][1] = hd
@@ -114,14 +128,40 @@ class tiler(object):
         for i in range(len(self.results2)):
         	writer.writerow(self.results2[i])
 
+    def fix_tm(self, hd, seq, probe, tm, flag):
+    	if flag == 1:
+    		end = seq.find(probe) + len(probe)
+    		while tm < MIN_PROBE_TM:
+    			hd = list(hd)
+    			probe = list(probe)
+    			probe.append(seq[end])
+    			hd.append(seq[end])
+    			end = end + 1
+    			probe = ''.join(probe)
+    			hd = ''.join(hd)
+    			tm = self.analyze(probe)
+    	else:
+    		end = seq.find(probe) - 1
+    		while tm < MIN_PROBE_TM:
+    			probe = list(probe)
+    			hd = list(hd)
+    			probe.insert(0, seq[end])
+    			hd.insert(0, seq[end])
+    			end = end - 1
+    			probe = ''.join(probe)
+    			hd = ''.join(hd)
+    			tm = self.analyze(probe)
+    	return hd, probe, tm
+
     def fixer(self, overlap, sense, antisense, sense_pos, antisense_pos):
     	overlap = list(overlap)
     	sense = list(sense)
     	antisense = list(antisense)
     	if sense_pos < antisense_pos:
     		while sense_pos > 13:
+    			print("HNNNNNNNNNNGGGGHHHH")
     			len_overlap = len(overlap)
-    			overlap.append(antisense[len_overlap+1])
+    			overlap.append(antisense[len_overlap])
     			sense.append(overlap[-1])
     			sense = sense[1:]
     			sense_pos = sense_pos - 1
